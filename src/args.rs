@@ -7,7 +7,7 @@
 use std::default::Default;
 use std::path::PathBuf;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Args {
     pub(crate) verbose: u8,
     pub(crate) find_clones: bool,

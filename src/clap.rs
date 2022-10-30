@@ -1,94 +1,87 @@
-/// clap setup.
-///
-/// clap is a crate for command line argument parsing.
-/// See https://docs.rs/clap/
-///
-/// Clap has a variety of setup approachs:
-///
-///   * via typical functions, which favors advanced uses yet is verbose.
-///   * via usage strings, which looks more like writing documentation.
-///   * via macros, which is fast and less verbose, yet atypical to read.
-///   * via YAML file, which favors localization and text file readability.
-///
-/// We prefer the typical functions, because they provide maximum capability,
-/// and in our experience are the easiest for Rust IDEs to read and debug.
-///
-/// We favor our convention of doing clap setup in a file named `clap.rs`,
-/// rather than in `main.rs`, because we like the separation of concerns.
+//! clap setup.
+//!
+//! clap is a crate for command line argument parsing.
+//! See https://docs.rs/clap/
+//!
+//! We prefer clap using the `command!` macro, which runs at compile time.
+//! We prefer clap using the builder pattern, which offers more capabilties.
+//!
+//! We favor our convention of doing clap setup in a file named `clap.rs`,
+//! rather than in `main.rs`, because we favor the separation of concerns.
 
-use clap::{Arg,App,Values};
+use clap::{Arg, ArgAction};
+use crate::args::Args;
+
 use std::path::PathBuf;
 use crate::args::Args;
 
-/// Create a clap app.
-pub fn app() -> App<'static> {
-    App::new("FileSync")
+/// Create a clap command.
+pub fn clap() -> crate::Args {
+    let matches = clap::command!()
+    .name("deduplicate-files")
     .version("1.0.0")
     .author("Joel Parker Henderson <joel@joelparkerhenderson.com>")
-    .about("Helps with file synchronization, dedupilication, and more")
+    .help("Helps with file synchronization, dedupilication, and more")
     .arg(Arg::new("verbose")
+        .help("Set the verbosity level")
         .short('v')
         .long("verbose")
-        .multiple(true)
-        .about("Set the verbosity level"))
+        .action(ArgAction::Count))
     .arg(Arg::new("find-cloned")
-        .long("find-cloned")
-        .about("Find files that are cloned i.e. originals (compare --find-clones, --find-uniques)"))
+        .help("Find files that are cloned i.e. originals (compare --find-clones, --find-uniques)")
+        .long("find-cloned"))
     .arg(Arg::new("find-clones")
-        .long("find-clones")
-        .about("Find files that are clones i.e. duplicates (compare --find-cloned, --find-uniques)"))
+        .help("Find files that are clones i.e. duplicates (compare --find-cloned, --find-uniques)")
+        .long("find-clones"))
     .arg(Arg::new("find-uniques")
-        .long("find-uniques")
-        .about("Find files that are uniques i.e not cloned or clones (compare --find-cloned, --find-clones)"))
+        .help("Find files that are uniques i.e not cloned or clones (compare --find-cloned, --find-clones)")
+        .long("find-uniques"))
     .arg(Arg::new("print")
-        .long("print")
-        .about("Print the results i.e. dry run"))
+        .help("Print the results i.e. dry run")
+        .long("print"))
     .arg(Arg::new("delete")
+        .help("Delete clones immediately")
         .long("delete")
-        .about("Delete clones immediately")
         .requires("find-clones")
         .conflicts_with("recycle")
         .conflicts_with("shred")
         .conflicts_with("symlink")
         .conflicts_with("hardlink"))
     .arg(Arg::new("recycle")
+        .help("Recycle clones to the trash folder")
         .long("recycle")
-        .about("Recycle clones to the trash folder")
         .requires("find-clones")
         .conflicts_with("delete")
         .conflicts_with("shred")
         .conflicts_with("symlink")
         .conflicts_with("hardlink"))
     .arg(Arg::new("shred")
+        .help("Shred clones by secure overwrite")
         .long("shred")
-        .about("Shred clones by secure overwrite")
         .requires("find-clones")
         .conflicts_with("delete")
         .conflicts_with("recycle")
         .conflicts_with("symlink")
         .conflicts_with("hardlink"))
     .arg(Arg::new("symlink")
+        .help("Symlink clones to their originals")
         .long("symlink")
-        .about("Symlink clones to their originals")
         .requires("find-clones")
         .conflicts_with("delete")
         .conflicts_with("recycle")
         .conflicts_with("shred")
         .conflicts_with("hardlink"))
     .arg(Arg::new("hardlink")
+        .help("Hardlink clones to their originals")
         .long("hardlink")
-        .about("Hardlink clones to their originals")
         .requires("find-clones")
         .conflicts_with("delete")
         .conflicts_with("recycle")
         .conflicts_with("shred")
         .conflicts_with("symlink"))
     .arg(Arg::new("paths")
-        .multiple(true))
-}
-/// Create an Args struct initiatied with the clap App settings.
-pub fn args() -> Args {
-    let matches = app().get_matches();
+        .help("Paths to process")
+        .min_values(0));
     Args {
         verbose: std::cmp::max(3, matches.occurrences_of("verbose") as u8),
         find_clones: matches.is_present("find-clones"),
